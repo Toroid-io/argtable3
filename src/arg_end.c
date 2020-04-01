@@ -75,15 +75,23 @@ static void arg_end_errorfn(void* parent, arg_dstr_t ds, int error, const char* 
     arg_dstr_cat(ds, "\n");
 }
 
-struct arg_end* arg_end(int maxcount) {
-    size_t nbytes;
+struct arg_end* arg_end(int maxcount
+#ifdef ARG_STATIC_ALLOCATION
+	, struct arg_end *pResult) {
+    struct arg_end* result = pResult;
+#else
+	) {
     struct arg_end* result;
+    size_t nbytes;
+#endif
 
+#ifndef ARG_STATIC_ALLOCATION
     nbytes = sizeof(struct arg_end) + maxcount * sizeof(int) /* storage for int error[maxcount] array*/
              + maxcount * sizeof(void*)                      /* storage for void* parent[maxcount] array */
              + maxcount * sizeof(char*);                     /* storage for char* argval[maxcount] array */
 
     result = (struct arg_end*)xmalloc(nbytes);
+#endif
 
     /* init the arg_hdr struct */
     result->hdr.flag = ARG_TERMINATOR;
@@ -99,6 +107,7 @@ struct arg_end* arg_end(int maxcount) {
     result->hdr.checkfn = NULL;
     result->hdr.errorfn = (arg_errorfn*)arg_end_errorfn;
 
+#ifndef ARG_STATIC_ALLOCATION
     /* store error[maxcount] array immediately after struct arg_end */
     result->error = (int*)(result + 1);
 
@@ -107,6 +116,7 @@ struct arg_end* arg_end(int maxcount) {
 
     /* store argval[maxcount] array immediately after parent[] array */
     result->argval = (const char**)(result->parent + maxcount);
+#endif
 
     ARG_TRACE(("arg_end(%d) returns %p\n", maxcount, result));
     return result;

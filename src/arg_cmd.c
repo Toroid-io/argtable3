@@ -41,21 +41,34 @@
 #include <string.h>
 
 #define MAX_MODULE_VERSION_SIZE 128
+#ifdef ARG_STATIC_ALLOCATION
+#define MAX_MODULE_NAME_SIZE	50
+#define MAX_MODULE_TAG_SIZE	50
+#define MAX_MODULE_VER_SIZE	50
+#endif
 
 static arg_hashtable_t* s_hashtable = NULL;
+#ifdef ARG_STATIC_ALLOCATION
+static char s_module_name[MAX_MODULE_NAME_SIZE] = {0};
+static char s_mod_ver_tag[MAX_MODULE_TAG_SIZE] = {0};
+static char s_mod_ver[MAX_MODULE_VER_SIZE] = {0};
+#else
 static char* s_module_name = NULL;
+static char* s_mod_ver_tag = NULL;
+static char* s_mod_ver = NULL;
+#endif
 static int s_mod_ver_major = 0;
 static int s_mod_ver_minor = 0;
 static int s_mod_ver_patch = 0;
-static char* s_mod_ver_tag = NULL;
-static char* s_mod_ver = NULL;
 
 void arg_set_module_name(const char* name) {
     size_t slen;
 
+#ifndef ARG_STATIC_ALLOCATION
     xfree(s_module_name);
-    slen = strlen(name);
     s_module_name = (char*)xmalloc(slen + 1);
+#endif
+    slen = strlen(name);
     memset(s_module_name, 0, slen + 1);
 
 #if (defined(__STDC_LIB_EXT1__) && defined(__STDC_WANT_LIB_EXT1__)) || (defined(__STDC_SECURE_LIB__) && defined(__STDC_WANT_SECURE_LIB__))
@@ -73,9 +86,11 @@ void arg_set_module_version(int major, int minor, int patch, const char* tag) {
     s_mod_ver_minor = minor;
     s_mod_ver_patch = patch;
 
+#ifndef ARG_STATIC_ALLOCATION
     xfree(s_mod_ver_tag);
-    slen_tag = strlen(tag);
     s_mod_ver_tag = (char*)xmalloc(slen_tag + 1);
+#endif
+    slen_tag = strlen(tag);
     memset(s_mod_ver_tag, 0, slen_tag + 1);
 
 #if (defined(__STDC_LIB_EXT1__) && defined(__STDC_WANT_LIB_EXT1__)) || (defined(__STDC_SECURE_LIB__) && defined(__STDC_WANT_SECURE_LIB__))
@@ -90,9 +105,11 @@ void arg_set_module_version(int major, int minor, int patch, const char* tag) {
     arg_dstr_catf(ds, "%d.", s_mod_ver_patch);
     arg_dstr_cat(ds, s_mod_ver_tag);
 
+#ifndef ARG_STATIC_ALLOCATION
     xfree(s_mod_ver);
-    slen_ds = strlen(arg_dstr_cstr(ds));
     s_mod_ver = (char*)xmalloc(slen_ds + 1);
+#endif
+    slen_ds = strlen(arg_dstr_cstr(ds));
     memset(s_mod_ver, 0, slen_ds + 1);
 
 #if (defined(__STDC_LIB_EXT1__) && defined(__STDC_WANT_LIB_EXT1__)) || (defined(__STDC_SECURE_LIB__) && defined(__STDC_WANT_SECURE_LIB__))
@@ -104,6 +121,7 @@ void arg_set_module_version(int major, int minor, int patch, const char* tag) {
     arg_dstr_destroy(ds);
 }
 
+#ifndef ARG_STATIC_ALLOCATION
 static unsigned int hash_key(const void* key) {
     const char* str = (const char*)key;
     int c;
@@ -175,6 +193,7 @@ void arg_cmd_register(const char* name, arg_cmdfn* proc, const char* description
 void arg_cmd_unregister(const char* name) {
     arg_hashtable_remove(s_hashtable, name);
 }
+#endif
 
 int arg_cmd_dispatch(const char* name, int argc, char* argv[], arg_dstr_t res) {
     arg_cmd_info_t* cmd_info = arg_cmd_info(name);
@@ -193,6 +212,7 @@ unsigned int arg_cmd_count(void) {
     return arg_hashtable_count(s_hashtable);
 }
 
+#ifndef ARG_STATIC_ALLOCATION
 arg_cmd_itr_t arg_cmd_itr_create(void) {
     return (arg_cmd_itr_t)arg_hashtable_itr_create(s_hashtable);
 }
@@ -216,6 +236,7 @@ void arg_cmd_itr_destroy(arg_cmd_itr_t itr) {
 int arg_cmd_itr_search(arg_cmd_itr_t itr, void* k) {
     return arg_hashtable_itr_search((arg_hashtable_itr_t*)itr, s_hashtable, k);
 }
+#endif
 
 static const char* module_name(void) {
     if (s_module_name == NULL || strlen(s_module_name) == 0)

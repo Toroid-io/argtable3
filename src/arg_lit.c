@@ -81,21 +81,41 @@ static void arg_lit_errorfn(struct arg_lit* parent, arg_dstr_t ds, int errorcode
     ARG_TRACE(("%s:errorfn(%p, %p, %d, %s, %s)\n", __FILE__, parent, ds, errorcode, argval, progname));
 }
 
-struct arg_lit* arg_lit0(const char* shortopts, const char* longopts, const char* glossary) {
+struct arg_lit* arg_lit0(const char* shortopts, const char* longopts, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_lit *pResult) {
+    return arg_litn(shortopts, longopts, 0, 1, glossary, pResult);
+#else
+			 ) {
     return arg_litn(shortopts, longopts, 0, 1, glossary);
+#endif
 }
 
-struct arg_lit* arg_lit1(const char* shortopts, const char* longopts, const char* glossary) {
+struct arg_lit* arg_lit1(const char* shortopts, const char* longopts, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_lit *pResult) {
+    return arg_litn(shortopts, longopts, 1, 1, glossary, pResult);
+#else
+			 ) {
     return arg_litn(shortopts, longopts, 1, 1, glossary);
+#endif
 }
 
-struct arg_lit* arg_litn(const char* shortopts, const char* longopts, int mincount, int maxcount, const char* glossary) {
+struct arg_lit* arg_litn(const char* shortopts, const char* longopts, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_lit *pResult) {
+    struct arg_lit* result = pResult;
+#else
+			 ) {
     struct arg_lit* result;
+#endif
 
     /* foolproof things by ensuring maxcount is not less than mincount */
     maxcount = (maxcount < mincount) ? mincount : maxcount;
 
+#ifndef ARG_STATIC_ALLOCATION
     result = (struct arg_lit*)xmalloc(sizeof(struct arg_lit));
+#endif
 
     /* init the arg_hdr struct */
     result->hdr.flag = 0;

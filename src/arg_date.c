@@ -111,18 +111,36 @@ static void arg_date_errorfn(struct arg_date* parent, arg_dstr_t ds, int errorco
     }
 }
 
-struct arg_date* arg_date0(const char* shortopts, const char* longopts, const char* format, const char* datatype, const char* glossary) {
+struct arg_date* arg_date0(const char* shortopts, const char* longopts, const char* format, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_date *pResult) {
+    return arg_daten(shortopts, longopts, format, datatype, 0, 1, glossary, pResult);
+#else
+			 ) {
     return arg_daten(shortopts, longopts, format, datatype, 0, 1, glossary);
+#endif
 }
 
-struct arg_date* arg_date1(const char* shortopts, const char* longopts, const char* format, const char* datatype, const char* glossary) {
+struct arg_date* arg_date1(const char* shortopts, const char* longopts, const char* format, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_date *pResult) {
+    return arg_daten(shortopts, longopts, format, datatype, 1, 1, glossary, pResult);
+#else
+			 ) {
     return arg_daten(shortopts, longopts, format, datatype, 1, 1, glossary);
+#endif
 }
 
 struct arg_date*
-arg_daten(const char* shortopts, const char* longopts, const char* format, const char* datatype, int mincount, int maxcount, const char* glossary) {
+arg_daten(const char* shortopts, const char* longopts, const char* format, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_date *pResult) {
+    struct arg_date* result = pResult;
+#else
+			 ) {
     size_t nbytes;
     struct arg_date* result;
+#endif
 
     /* foolproof things by ensuring maxcount is not less than mincount */
     maxcount = (maxcount < mincount) ? mincount : maxcount;
@@ -131,12 +149,14 @@ arg_daten(const char* shortopts, const char* longopts, const char* format, const
     if (!format)
         format = "%x";
 
+#ifndef ARG_STATIC_ALLOCATION
     nbytes = sizeof(struct arg_date)         /* storage for struct arg_date */
              + maxcount * sizeof(struct tm); /* storage for tmval[maxcount] array */
 
     /* allocate storage for the arg_date struct + tmval[] array.    */
     /* we use calloc because we want the tmval[] array zero filled. */
     result = (struct arg_date*)xcalloc(1, nbytes);
+#endif
 
     /* init the arg_hdr struct */
     result->hdr.flag = ARG_HASVALUE;
@@ -153,7 +173,9 @@ arg_daten(const char* shortopts, const char* longopts, const char* format, const
     result->hdr.errorfn = (arg_errorfn*)arg_date_errorfn;
 
     /* store the tmval[maxcount] array immediately after the arg_date struct */
+#ifndef ARG_STATIC_ALLOCATION
     result->tmval = (struct tm*)(result + 1);
+#endif
 
     /* init the remaining arg_date member variables */
     result->count = 0;

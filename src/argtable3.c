@@ -49,6 +49,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef ARG_STATIC_ALLOCATION
+#ifndef SHORTOPTS_BUFFER_SIZE
+#define SHORTOPTS_BUFFER_SIZE	300
+#endif
+#ifndef LONGOPTS_BUFFER_SIZE
+#define LONGOPTS_BUFFER_SIZE	500
+#endif
+#ifndef MAX_NUM_ARGUMENTS
+#define MAX_NUM_ARGUMENTS		20
+#endif
+#endif
+
 static void arg_register_error(struct arg_end* end, void* parent, int error, const char* argval) {
     /* printf("arg_register_error(%p,%p,%d,%s)\n",end,parent,error,argval); */
     if (end->count < end->hdr.maxcount) {
@@ -102,13 +114,16 @@ void dump_longoptions(struct longoptions * longoptions)
 #endif
 
 static struct longoptions* alloc_longoptions(struct arg_hdr** table) {
-    struct longoptions* result;
     size_t nbytes;
     int noptions = 1;
     size_t longoptlen = 0;
     int tabindex;
     int option_index = 0;
+    struct longoptions* result;
     char* store;
+#ifdef ARG_STATIC_ALLOCATION
+    static char storebuf[LONGOPTS_BUFFER_SIZE] = {0};
+#endif
 
     /*
      * Determine the total number of option structs required
@@ -134,7 +149,15 @@ static struct longoptions* alloc_longoptions(struct arg_hdr** table) {
     /* allocate storage for return data structure as: */
     /* (struct longoptions) + (struct options)[noptions] + char[longoptlen] */
     nbytes = sizeof(struct longoptions) + sizeof(struct option) * noptions + longoptlen;
+
+#ifndef ARG_STATIC_ALLOCATION
     result = (struct longoptions*)xmalloc(nbytes);
+#else
+    if (nbytes > LONGOPTS_BUFFER_SIZE)
+	    return NULL;
+    result = (struct longoptions*)storebuf;
+    store = storebuf;
+#endif
 
     result->getoptval = 0;
     result->noptions = noptions;
@@ -179,10 +202,15 @@ static struct longoptions* alloc_longoptions(struct arg_hdr** table) {
 }
 
 static char* alloc_shortoptions(struct arg_hdr** table) {
-    char* result;
     size_t len = 2;
     int tabindex;
+#ifndef ARG_STATIC_ALLOCATION
+    char* result;
+    char *res;
+#else
+    static char result[SHORTOPTS_BUFFER_SIZE] = {0};
     char* res;
+#endif
 
     /* determine the total number of option chars required */
     for (tabindex = 0; !(table[tabindex]->flag & ARG_TERMINATOR); tabindex++) {
@@ -190,7 +218,12 @@ static char* alloc_shortoptions(struct arg_hdr** table) {
         len += 3 * (hdr->shortopts ? strlen(hdr->shortopts) : 0);
     }
 
+#ifndef ARG_STATIC_ALLOCATION
     result = xmalloc(len);
+#else
+    if (len > SHORTOPTS_BUFFER_SIZE)
+	    return NULL;
+#endif
 
     res = result;
 
@@ -314,8 +347,10 @@ static void arg_parse_tagged(int argc, char** argv, struct arg_hdr** table, stru
         }
     }
 
+#ifndef ARG_STATIC_ALLOCATION
     xfree(shortoptions);
     xfree(longoptions);
+#endif
 }
 
 static void arg_parse_untagged(int argc, char** argv, struct arg_hdr** table, struct arg_end* endtable) {
@@ -416,7 +451,11 @@ int arg_parse(int argc, char** argv, void** argtable) {
     struct arg_hdr** table = (struct arg_hdr**)argtable;
     struct arg_end* endtable;
     int endindex;
+#ifndef ARG_STATIC_ALLOCATION
     char** argvcopy = NULL;
+#else
+    char* argvcopy[MAX_NUM_ARGUMENTS] = {0};
+#endif
     int i;
 
     /*printf("arg_parse(%d,%p,%p)\n",argc,argv,argtable);*/
@@ -438,8 +477,9 @@ int arg_parse(int argc, char** argv, void** argtable) {
         /* Now we are finished */
         return endtable->count;
     }
-
+#ifndef ARG_STATIC_ALLOCATION
     argvcopy = (char**)xmalloc(sizeof(char*) * (argc + 1));
+#endif
 
     /*
         Fill in the local copy of argv[]. We need a local copy
@@ -462,7 +502,9 @@ int arg_parse(int argc, char** argv, void** argtable) {
         arg_parse_check(table, endtable);
 
     /* release the local copt of argv[] */
+#ifndef ARG_STATIC_ALLOCATION
     xfree(argvcopy);
+#endif
 
     return endtable->count;
 }
@@ -1021,6 +1063,7 @@ int arg_nullcheck(void** argtable) {
  * with the newer arg_freetable() function.
  * We still keep arg_free() for backwards compatibility.
  */
+#ifndef ARG_STATIC_ALLOCATION
 void arg_free(void** argtable) {
     struct arg_hdr** table = (struct arg_hdr**)argtable;
     int tabindex = 0;
@@ -1042,8 +1085,10 @@ void arg_free(void** argtable) {
 
     } while (!(flag & ARG_TERMINATOR));
 }
+#endif
 
 /* frees each non-NULL element of argtable[], where n is the size of the number of entries in the array */
+#ifndef ARG_STATIC_ALLOCATION
 void arg_freetable(void** argtable, size_t n) {
     struct arg_hdr** table = (struct arg_hdr**)argtable;
     size_t tabindex = 0;
@@ -1056,6 +1101,7 @@ void arg_freetable(void** argtable, size_t n) {
         table[tabindex] = NULL;
     };
 }
+#endif
 
 #ifdef _WIN32
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {

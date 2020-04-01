@@ -79,6 +79,7 @@ void arg_set_panic(arg_panicfn* proc) {
     s_panic = proc;
 }
 
+#ifndef ARG_STATIC_ALLOCATION
 void* xmalloc(size_t size) {
     void* ret = malloc(size);
     if (!ret) {
@@ -86,6 +87,7 @@ void* xmalloc(size_t size) {
     }
     return ret;
 }
+#endif
 
 void* xcalloc(size_t count, size_t size) {
     size_t allocated_count = count && size ? count : 1;
@@ -107,9 +109,14 @@ void* xrealloc(void* ptr, size_t size) {
 }
 
 void xfree(void* ptr) {
+#ifndef ARG_STATIC_ALLOCATION
     free(ptr);
+#else
+    (void)ptr;
+#endif
 }
 
+#ifndef ARG_STATIC_ALLOCATION
 static void merge(void* data, int esize, int i, int j, int k, arg_comparefn* comparefn) {
     char* a = (char*)data;
     char* m;
@@ -176,3 +183,4 @@ void arg_mgsort(void* data, int size, int esize, int i, int k, arg_comparefn* co
         merge(data, esize, i, j, k, comparefn);
     }
 }
+#endif

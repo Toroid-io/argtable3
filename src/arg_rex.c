@@ -31,6 +31,7 @@
  ******************************************************************************/
 
 #include "argtable3.h"
+#ifndef ARG_STATIC_ALLOCATION
 
 #ifndef ARG_AMALGAMATION
 #include "argtable3_private.h"
@@ -1003,3 +1004,5 @@ TRexBool trex_getsubexp(TRex* exp, int n, TRexMatch* subexp) {
     *subexp = exp->_matches[n];
     return TRex_True;
 }
+
+#endif

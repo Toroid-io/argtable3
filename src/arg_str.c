@@ -96,17 +96,35 @@ static void arg_str_errorfn(struct arg_str* parent, arg_dstr_t ds, int errorcode
     }
 }
 
-struct arg_str* arg_str0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary) {
+struct arg_str* arg_str0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_str *pResult) {
+    return arg_strn(shortopts, longopts, datatype, 0, 1, glossary, pResult);
+#else
+			 ) {
     return arg_strn(shortopts, longopts, datatype, 0, 1, glossary);
+#endif
 }
 
-struct arg_str* arg_str1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary) {
+struct arg_str* arg_str1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_str *pResult) {
+    return arg_strn(shortopts, longopts, datatype, 1, 1, glossary, pResult);
+#else
+			 ) {
     return arg_strn(shortopts, longopts, datatype, 1, 1, glossary);
+#endif
 }
 
-struct arg_str* arg_strn(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary) {
-    size_t nbytes;
+struct arg_str* arg_strn(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_str *pResult) {
+    struct arg_str* result = pResult;
+#else
+			 ) {
     struct arg_str* result;
+    size_t nbytes;
+#endif
     int i;
 
     /* should not allow this stupid error */
@@ -114,10 +132,12 @@ struct arg_str* arg_strn(const char* shortopts, const char* longopts, const char
     /* foolproof things by ensuring maxcount is not less than mincount */
     maxcount = (maxcount < mincount) ? mincount : maxcount;
 
+#ifndef ARG_STATIC_ALLOCATION
     nbytes = sizeof(struct arg_str)      /* storage for struct arg_str */
              + maxcount * sizeof(char*); /* storage for sval[maxcount] array */
 
     result = (struct arg_str*)xmalloc(nbytes);
+#endif
 
     /* init the arg_hdr struct */
     result->hdr.flag = ARG_HASVALUE;

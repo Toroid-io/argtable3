@@ -106,27 +106,47 @@ static void arg_dbl_errorfn(struct arg_dbl* parent, arg_dstr_t ds, int errorcode
     }
 }
 
-struct arg_dbl* arg_dbl0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary) {
+struct arg_dbl* arg_dbl0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_dbl *pResult) {
+    return arg_dbln(shortopts, longopts, datatype, 0, 1, glossary, pResult);
+#else
+			 ) {
     return arg_dbln(shortopts, longopts, datatype, 0, 1, glossary);
+#endif
 }
 
-struct arg_dbl* arg_dbl1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary) {
+struct arg_dbl* arg_dbl1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_dbl *pResult) {
+    return arg_dbln(shortopts, longopts, datatype, 1, 1, glossary, pResult);
+#else
+			 ) {
     return arg_dbln(shortopts, longopts, datatype, 1, 1, glossary);
+#endif
 }
 
-struct arg_dbl* arg_dbln(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary) {
-    size_t nbytes;
+struct arg_dbl* arg_dbln(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_dbl *pResult) {
+    struct arg_dbl* result = pResult;
+#else
+			 ) {
     struct arg_dbl* result;
+    size_t nbytes;
+#endif
     size_t addr;
     size_t rem;
 
     /* foolproof things by ensuring maxcount is not less than mincount */
     maxcount = (maxcount < mincount) ? mincount : maxcount;
 
+#ifndef ARG_STATIC_ALLOCATION
     nbytes = sizeof(struct arg_dbl)             /* storage for struct arg_dbl */
              + (maxcount + 1) * sizeof(double); /* storage for dval[maxcount] array plus one extra for padding to memory boundary */
 
     result = (struct arg_dbl*)xmalloc(nbytes);
+#endif
 
     /* init the arg_hdr struct */
     result->hdr.flag = ARG_HASVALUE;
@@ -147,9 +167,11 @@ struct arg_dbl* arg_dbln(const char* shortopts, const char* longopts, const char
      * purely for SPARC and Motorola systems. They require floats and
      * doubles to be aligned on natural boundaries.
      */
+#ifndef ARG_STATIC_ALLOCATION
     addr = (size_t)(result + 1);
     rem = addr % sizeof(double);
     result->dval = (double*)(addr + sizeof(double) - rem);
+#endif
     ARG_TRACE(("addr=%p, dval=%p, sizeof(double)=%d rem=%d\n", addr, result->dval, (int)sizeof(double), (int)rem));
 
     result->count = 0;

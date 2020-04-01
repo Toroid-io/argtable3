@@ -41,7 +41,11 @@ extern "C" {
 #endif
 
 #define ARG_REX_ICASE 1
+#ifndef ARG_STATIC_ALLOCATION
 #define ARG_DSTR_SIZE 200
+#else
+#define ARG_DSTR_SIZE 400
+#endif
 #define ARG_CMD_NAME_LEN 100
 #define ARG_CMD_DESCRIPTION_LEN 256
 
@@ -173,27 +177,92 @@ typedef struct arg_cmd_info {
 
 /**** arg_xxx constructor functions *********************************/
 
-ARG_EXTERN struct arg_rem* arg_rem(const char* datatype, const char* glossary);
+ARG_EXTERN struct arg_rem* arg_rem(const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+                               , struct arg_rem *pResult);
+#else
+                               );
+#endif
 
-ARG_EXTERN struct arg_lit* arg_lit0(const char* shortopts, const char* longopts, const char* glossary);
-ARG_EXTERN struct arg_lit* arg_lit1(const char* shortopts, const char* longopts, const char* glossary);
-ARG_EXTERN struct arg_lit* arg_litn(const char* shortopts, const char* longopts, int mincount, int maxcount, const char* glossary);
+ARG_EXTERN struct arg_lit* arg_lit0(const char* shortopts, const char* longopts, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_lit *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_lit* arg_lit1(const char* shortopts, const char* longopts, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_lit *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_lit* arg_litn(const char* shortopts, const char* longopts, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_lit *pResult);
+#else
+			 );
+#endif
 
 ARG_EXTERN struct arg_key* arg_key0(const char* keyword, int flags, const char* glossary);
 ARG_EXTERN struct arg_key* arg_key1(const char* keyword, int flags, const char* glossary);
 ARG_EXTERN struct arg_key* arg_keyn(const char* keyword, int flags, int mincount, int maxcount, const char* glossary);
 
-ARG_EXTERN struct arg_int* arg_int0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_int* arg_int1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_int* arg_intn(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary);
+ARG_EXTERN struct arg_int* arg_int0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_int *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_int* arg_int1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_int *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_int* arg_intn(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_int *pResult);
+#else
+			 );
+#endif
 
-ARG_EXTERN struct arg_dbl* arg_dbl0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_dbl* arg_dbl1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_dbl* arg_dbln(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary);
+ARG_EXTERN struct arg_dbl* arg_dbl0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_dbl *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_dbl* arg_dbl1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_dbl *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_dbl* arg_dbln(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_dbl *pResult);
+#else
+			 );
+#endif
 
-ARG_EXTERN struct arg_str* arg_str0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_str* arg_str1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_str* arg_strn(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary);
+ARG_EXTERN struct arg_str* arg_str0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_str *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_str* arg_str1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_str *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_str* arg_strn(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_str *pResult);
+#else
+			 );
+#endif
 
 ARG_EXTERN struct arg_rex* arg_rex0(const char* shortopts, const char* longopts, const char* pattern, const char* datatype, int flags, const char* glossary);
 ARG_EXTERN struct arg_rex* arg_rex1(const char* shortopts, const char* longopts, const char* pattern, const char* datatype, int flags, const char* glossary);
@@ -206,15 +275,50 @@ ARG_EXTERN struct arg_rex* arg_rexn(const char* shortopts,
                          int flags,
                          const char* glossary);
 
-ARG_EXTERN struct arg_file* arg_file0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_file* arg_file1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_file* arg_filen(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary);
+ARG_EXTERN struct arg_file* arg_file0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_file *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_file* arg_file1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_file *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_file* arg_filen(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_file *pResult);
+#else
+			 );
+#endif
 
-ARG_EXTERN struct arg_date* arg_date0(const char* shortopts, const char* longopts, const char* format, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_date* arg_date1(const char* shortopts, const char* longopts, const char* format, const char* datatype, const char* glossary);
-ARG_EXTERN struct arg_date* arg_daten(const char* shortopts, const char* longopts, const char* format, const char* datatype, int mincount, int maxcount, const char* glossary);
+ARG_EXTERN struct arg_date* arg_date0(const char* shortopts, const char* longopts, const char* format, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_date *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_date* arg_date1(const char* shortopts, const char* longopts, const char* format, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_date *pResult);
+#else
+			 );
+#endif
+ARG_EXTERN struct arg_date* arg_daten(const char* shortopts, const char* longopts, const char* format, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_date *pResult);
+#else
+			 );
+#endif
 
-ARG_EXTERN struct arg_end* arg_end(int maxerrors);
+ARG_EXTERN struct arg_end* arg_end(int maxerrors
+#ifdef ARG_STATIC_ALLOCATION
+				  , struct arg_end *pResult);
+#else
+				  );
+#endif
 
 #define ARG_DSTR_STATIC ((arg_dstr_freefn*)0)
 #define ARG_DSTR_VOLATILE ((arg_dstr_freefn*)1)
@@ -260,7 +364,9 @@ ARG_EXTERN int arg_cmd_itr_advance(arg_cmd_itr_t itr);
 ARG_EXTERN char* arg_cmd_itr_key(arg_cmd_itr_t itr);
 ARG_EXTERN arg_cmd_info_t* arg_cmd_itr_value(arg_cmd_itr_t itr);
 ARG_EXTERN int arg_cmd_itr_search(arg_cmd_itr_t itr, void* k);
+#ifndef ARG_STATIC_ALLOCATION
 ARG_EXTERN void arg_mgsort(void* data, int size, int esize, int i, int k, arg_comparefn* comparefn);
+#endif
 ARG_EXTERN void arg_make_get_help_msg(arg_dstr_t res);
 ARG_EXTERN void arg_make_help_msg(arg_dstr_t ds, char* cmd_name, void** argtable);
 ARG_EXTERN void arg_make_syntax_err_msg(arg_dstr_t ds, void** argtable, struct arg_end* end);
@@ -270,6 +376,31 @@ ARG_EXTERN void arg_set_module_version(int major, int minor, int patch, const ch
 
 /**** deprecated functions, for back-compatibility only ********/
 ARG_EXTERN void arg_free(void** argtable);
+
+/**** static allocation helpers ****/
+#ifdef ARG_STATIC_ALLOCATION
+#define STATIC_ARG_INT(name, maxcount) \
+	static int val ## name[maxcount] = {0}; \
+	static struct arg_int name = { \
+		.hdr = {0}, \
+		.count = 0, \
+		.ival = & val ## name[0] \
+	}
+#define STATIC_ARG_INT0(name) STATIC_ARG_INT(name, 1)
+#define STATIC_ARG_INT1(name) STATIC_ARG_INT(name, 1)
+
+#define STATIC_ARG_END(maxcount, name) \
+	static int error ## name[maxcount] = {0}; \
+	static void * parent ## name[maxcount] = {0}; \
+	static const char * argval ## name[maxcount] = {0}; \
+	static struct arg_end name = { \
+		.hdr = {0}, \
+		.count = 0, \
+		.error = & error ## name[0], \
+		.parent = & parent ## name[0], \
+		.argval = & argval ## name[0] \
+	}
+#endif
 
 #ifdef __cplusplus
 }

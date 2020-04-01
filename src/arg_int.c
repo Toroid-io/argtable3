@@ -246,25 +246,45 @@ static void arg_int_errorfn(struct arg_int* parent, arg_dstr_t ds, int errorcode
     }
 }
 
-struct arg_int* arg_int0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary) {
+struct arg_int* arg_int0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_int *pResult) {
+    return arg_intn(shortopts, longopts, datatype, 0, 1, glossary, pResult);
+#else
+			 ) {
     return arg_intn(shortopts, longopts, datatype, 0, 1, glossary);
+#endif
 }
 
-struct arg_int* arg_int1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary) {
+struct arg_int* arg_int1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_int *pResult) {
+    return arg_intn(shortopts, longopts, datatype, 1, 1, glossary, pResult);
+#else
+			 ) {
     return arg_intn(shortopts, longopts, datatype, 1, 1, glossary);
+#endif
 }
 
-struct arg_int* arg_intn(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary) {
-    size_t nbytes;
+struct arg_int* arg_intn(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_int *pResult) {
+    struct arg_int* result = pResult;
+#else
+			 ) {
     struct arg_int* result;
+    size_t nbytes;
+#endif
 
     /* foolproof things by ensuring maxcount is not less than mincount */
     maxcount = (maxcount < mincount) ? mincount : maxcount;
 
+#ifndef ARG_STATIC_ALLOCATION
     nbytes = sizeof(struct arg_int)    /* storage for struct arg_int */
              + maxcount * sizeof(int); /* storage for ival[maxcount] array */
 
     result = (struct arg_int*)xmalloc(nbytes);
+#endif
 
     /* init the arg_hdr struct */
     result->hdr.flag = ARG_HASVALUE;
@@ -281,7 +301,9 @@ struct arg_int* arg_intn(const char* shortopts, const char* longopts, const char
     result->hdr.errorfn = (arg_errorfn*)arg_int_errorfn;
 
     /* store the ival[maxcount] array immediately after the arg_int struct */
+#ifndef ARG_STATIC_ALLOCATION
     result->ival = (int*)(result + 1);
+#endif
     result->count = 0;
 
     ARG_TRACE(("arg_intn() returns %p\n", result));

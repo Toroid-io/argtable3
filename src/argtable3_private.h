@@ -78,10 +78,12 @@ typedef void(arg_panicfn)(const char* fmt, ...);
 
 extern void dbg_printf(const char* fmt, ...);
 extern void arg_set_panic(arg_panicfn* proc);
+#ifndef ARG_STATIC_ALLOCATION
 extern void* xmalloc(size_t size);
 extern void* xcalloc(size_t count, size_t size);
 extern void* xrealloc(void* ptr, size_t size);
 extern void xfree(void* ptr);
+#endif
 
 struct arg_hashtable_entry {
     void *k, *v;

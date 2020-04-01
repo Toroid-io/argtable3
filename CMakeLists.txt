@@ -30,14 +30,31 @@
 
 cmake_minimum_required(VERSION 3.0)
 
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR arm)
+
+set(CMAKE_C_COMPILER "arm-none-eabi-gcc")
+
+set(CMAKE_EXE_LINKER_FLAGS "--specs=nano.specs" CACHE INTERNAL "")
+set(CMAKE_EXE_LINKER_FLAGS "--specs=nosys.specs" CACHE INTERNAL "")
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
 set(ARGTABLE3_PROJECT_NAME "argtable3")
 set(ARGTABLE3_PACKAGE_NAME "Argtable3")
 
 project(${ARGTABLE3_PROJECT_NAME})
 
 option(ARGTABLE3_ENABLE_CONAN "Enable Conan dependency manager" OFF)
-option(ARGTABLE3_ENABLE_TESTS "Enable unit tests" ON)
+option(ARGTABLE3_ENABLE_TESTS "Enable unit tests" OFF)
 option(ARGTABLE3_BUILD_STATIC_EXAMPLES "Build examples with the static argtable3 library" OFF)
+option(ARGTABLE3_BUILD_EXAMPLES "Build examples" OFF)
+option(ARGTABLE3_STATIC_ALLOCATION "Build with static allocation" OFF)
 
 get_filename_component(VERSION_TAG_PATH "version.tag" ABSOLUTE)
 if(EXISTS ${VERSION_TAG_PATH})
@@ -65,6 +82,10 @@ if(ARGTABLE3_ENABLE_CONAN AND EXISTS "${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath-link,${LINK_FLAGS}")
 endif()
 
+if(ARGTABLE3_STATIC_ALLOCATION)
+  add_definitions(-DARG_STATIC_ALLOCATION)
+endif()
+
 set(ARGTABLE3_AMALGAMATION_SRC_FILE ${PROJECT_SOURCE_DIR}/dist/argtable3.c)
 set(ARGTABLE3_SRC_FILES
   ${PROJECT_SOURCE_DIR}/src/arg_cmd.c
@@ -81,7 +102,7 @@ set(ARGTABLE3_SRC_FILES
   ${PROJECT_SOURCE_DIR}/src/arg_str.c
   ${PROJECT_SOURCE_DIR}/src/arg_utils.c
   ${PROJECT_SOURCE_DIR}/src/argtable3.c
-  ${PROJECT_SOURCE_DIR}/src/getopt_long.c
+  #${PROJECT_SOURCE_DIR}/src/getopt_long.c
 )
 
 # Platform specific settings for installation
@@ -90,7 +111,9 @@ if(APPLE)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(examples)
+if(ARGTABLE3_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 
 if(ARGTABLE3_ENABLE_TESTS)
   enable_testing()

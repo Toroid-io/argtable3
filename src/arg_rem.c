@@ -38,8 +38,18 @@
 
 #include <stdlib.h>
 
-struct arg_rem* arg_rem(const char* datatype, const char* glossary) {
+struct arg_rem* arg_rem(const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			, struct arg_rem *pResult) {
+#else
+			) {
+#endif
+
+#ifdef ARG_STATIC_ALLOCATION
+    struct arg_rem* result = pResult;
+#else
     struct arg_rem* result = (struct arg_rem*)xmalloc(sizeof(struct arg_rem));
+#endif
 
     result->hdr.flag = 0;
     result->hdr.shortopts = NULL;

@@ -153,28 +153,48 @@ static void arg_file_errorfn(struct arg_file* parent, arg_dstr_t ds, int errorco
     }
 }
 
-struct arg_file* arg_file0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary) {
+struct arg_file* arg_file0(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_file *pResult) {
+    return arg_filen(shortopts, longopts, datatype, 0, 1, glossary, pResult);
+#else
+			 ) {
     return arg_filen(shortopts, longopts, datatype, 0, 1, glossary);
+#endif
 }
 
-struct arg_file* arg_file1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary) {
+struct arg_file* arg_file1(const char* shortopts, const char* longopts, const char* datatype, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_file *pResult) {
+    return arg_filen(shortopts, longopts, datatype, 1, 1, glossary, pResult);
+#else
+			 ) {
     return arg_filen(shortopts, longopts, datatype, 1, 1, glossary);
+#endif
 }
 
-struct arg_file* arg_filen(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary) {
+struct arg_file* arg_filen(const char* shortopts, const char* longopts, const char* datatype, int mincount, int maxcount, const char* glossary
+#ifdef ARG_STATIC_ALLOCATION
+			 , struct arg_file *pResult) {
+    struct arg_file* result = pResult;
+#else
+			 ) {
     size_t nbytes;
     struct arg_file* result;
     int i;
+#endif
 
     /* foolproof things by ensuring maxcount is not less than mincount */
     maxcount = (maxcount < mincount) ? mincount : maxcount;
 
+#ifndef ARG_STATIC_ALLOCATION
     nbytes = sizeof(struct arg_file)     /* storage for struct arg_file */
              + sizeof(char*) * maxcount  /* storage for filename[maxcount] array */
              + sizeof(char*) * maxcount  /* storage for basename[maxcount] array */
              + sizeof(char*) * maxcount; /* storage for extension[maxcount] array */
 
     result = (struct arg_file*)xmalloc(nbytes);
+#endif
 
     /* init the arg_hdr struct */
     result->hdr.flag = ARG_HASVALUE;
@@ -191,6 +211,7 @@ struct arg_file* arg_filen(const char* shortopts, const char* longopts, const ch
     result->hdr.errorfn = (arg_errorfn*)arg_file_errorfn;
 
     /* store the filename,basename,extension arrays immediately after the arg_file struct */
+#ifndef ARG_STATIC_ALLOCATION
     result->filename = (const char**)(result + 1);
     result->basename = result->filename + maxcount;
     result->extension = result->basename + maxcount;
@@ -202,6 +223,7 @@ struct arg_file* arg_filen(const char* shortopts, const char* longopts, const ch
         result->basename[i] = "";
         result->extension[i] = "";
     }
+#endif
 
     ARG_TRACE(("arg_filen() returns %p\n", result));
     return result;

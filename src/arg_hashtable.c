@@ -86,6 +86,13 @@ static const unsigned int primes[] = {53,       97,       193,      389,       7
 const unsigned int prime_table_length = sizeof(primes) / sizeof(primes[0]);
 const float max_load_factor = (float)0.65;
 
+#ifdef ARG_STATIC_ALLOCATION
+#define MAX_HASHTABLE_ENTRIES	53
+static arg_hashtable_t _hashtable = {0};
+static struct arg_hashtable_entry *_pHashTableEntries[MAX_HASHTABLE_ENTRIES] = {0};
+static struct arg_hashtable_entry _HashTableEntries[MAX_HASHTABLE_ENTRIES] = {0};
+#endif
+
 static unsigned int enhanced_hash(arg_hashtable_t* h, const void* k) {
     /*
      * Aim to protect against poor hash functions by adding logic here.
@@ -123,9 +130,20 @@ arg_hashtable_t* arg_hashtable_create(unsigned int minsize, unsigned int (*hashf
             break;
         }
     }
-
+#ifndef ARG_STATIC_ALLOCATION
     h = (arg_hashtable_t*)xmalloc(sizeof(arg_hashtable_t));
     h->table = (struct arg_hashtable_entry**)xmalloc(sizeof(struct arg_hashtable_entry*) * size);
+#else
+	if ( size > MAX_HASHTABLE_ENTRIES )
+		return NULL;
+
+	h = &_hashtable;
+	h->table = &_pHashTableEntries[0];
+	for (pindex = 0; pindex < MAX_HASHTABLE_ENTRIES; pindex++)
+	{
+		_pHashTableEntries[pindex] = &_HashTableEntries[pindex];
+	}
+#endif
     memset(h->table, 0, size * sizeof(struct arg_hashtable_entry*));
     h->tablelength = size;
     h->primeindex = pindex;
@@ -136,6 +154,7 @@ arg_hashtable_t* arg_hashtable_create(unsigned int minsize, unsigned int (*hashf
     return h;
 }
 
+#ifndef ARG_STATIC_ALLOCATION
 static int arg_hashtable_expand(arg_hashtable_t* h) {
     /* Double the size of the table to accommodate more entries */
     struct arg_hashtable_entry** newtable;
@@ -170,11 +189,13 @@ static int arg_hashtable_expand(arg_hashtable_t* h) {
     h->loadlimit = (unsigned int)ceil(newsize * max_load_factor);
     return -1;
 }
+#endif
 
 unsigned int arg_hashtable_count(arg_hashtable_t* h) {
     return h->entrycount;
 }
 
+#ifndef ARG_STATIC_ALLOCATION
 void arg_hashtable_insert(arg_hashtable_t* h, void* k, void* v) {
     /* This method allows duplicate keys - but they shouldn't be used */
     unsigned int index;
@@ -197,6 +218,7 @@ void arg_hashtable_insert(arg_hashtable_t* h, void* k, void* v) {
     h->table[index] = e;
     h->entrycount++;
 }
+#endif
 
 void* arg_hashtable_search(arg_hashtable_t* h, const void* k) {
     struct arg_hashtable_entry* e;
@@ -215,6 +237,7 @@ void* arg_hashtable_search(arg_hashtable_t* h, const void* k) {
     return NULL;
 }
 
+#ifndef ARG_STATIC_ALLOCATION
 void arg_hashtable_remove(arg_hashtable_t* h, const void* k) {
     /*
      * TODO: consider compacting the table when the load factor drops enough,
@@ -297,7 +320,9 @@ arg_hashtable_itr_t* arg_hashtable_itr_create(arg_hashtable_t* h) {
     }
     return itr;
 }
+#endif
 
+#ifndef ARG_STATIC_ALLOCATION
 void arg_hashtable_itr_destroy(arg_hashtable_itr_t* itr) {
     xfree(itr);
 }
@@ -421,3 +446,4 @@ int arg_hashtable_change(arg_hashtable_t* h, void* k, void* v) {
     }
     return 0;
 }
+#endif

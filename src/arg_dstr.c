@@ -47,6 +47,10 @@
 
 #define START_VSNBUFF 16
 
+#ifdef ARG_STATIC_ALLOCATION
+#define CATF_STATIC_BUFFER_SIZE 200
+#endif
+
 /*
  * This dynamic string module is adapted from TclResult.c in the Tcl library.
  * Here is the copyright notice from the library:
@@ -102,15 +106,28 @@ typedef struct _internal_arg_dstr {
     int append_used;
 } _internal_arg_dstr_t;
 
+#ifndef ARG_STATIC_ALLOCATION
 static void setup_append_buf(arg_dstr_t res, int newSpace);
+#endif
+
+#ifdef ARG_STATIC_ALLOCATION
+static _internal_arg_dstr_t h = {0};
+#endif
 
 arg_dstr_t arg_dstr_create(void) {
+#ifndef ARG_STATIC_ALLOCATION
     _internal_arg_dstr_t* h = (_internal_arg_dstr_t*)xmalloc(sizeof(_internal_arg_dstr_t));
     memset(h, 0, sizeof(_internal_arg_dstr_t));
     h->sbuf[0] = 0;
     h->data = h->sbuf;
     h->free_proc = ARG_DSTR_STATIC;
     return h;
+#else
+    h.sbuf[0] = 0;
+    h.data = h.sbuf;
+    h.free_proc = ARG_DSTR_STATIC;
+    return &h;
+#endif
 }
 
 void arg_dstr_destroy(arg_dstr_t ds) {
@@ -118,19 +135,24 @@ void arg_dstr_destroy(arg_dstr_t ds) {
         return;
 
     arg_dstr_reset(ds);
+#ifndef ARG_STATIC_ALLOCATION
     xfree(ds);
+#endif
     return;
 }
 
 void arg_dstr_set(arg_dstr_t ds, char* str, arg_dstr_freefn* free_proc) {
+#ifndef ARG_STATIC_ALLOCATION
     int length;
     register arg_dstr_freefn* old_free_proc = ds->free_proc;
     char* old_result = ds->data;
+#endif
 
     if (str == NULL) {
         ds->sbuf[0] = 0;
         ds->data = ds->sbuf;
         ds->free_proc = ARG_DSTR_STATIC;
+#ifndef ARG_STATIC_ALLOCATION
     } else if (free_proc == ARG_DSTR_VOLATILE) {
         length = (int)strlen(str);
         if (length > ARG_DSTR_SIZE) {
@@ -141,6 +163,7 @@ void arg_dstr_set(arg_dstr_t ds, char* str, arg_dstr_freefn* free_proc) {
             ds->free_proc = ARG_DSTR_STATIC;
         }
         strcpy(ds->data, str);
+#endif
     } else {
         ds->data = str;
         ds->free_proc = free_proc;
@@ -152,10 +175,12 @@ void arg_dstr_set(arg_dstr_t ds, char* str, arg_dstr_freefn* free_proc) {
      * the old result value.
      */
 
+#ifndef ARG_STATIC_ALLOCATION
     if ((old_free_proc != 0) && (old_result != ds->data)) {
         if (old_free_proc == ARG_DSTR_DYNAMIC) {
             xfree(old_result);
-        } else {
+        } else
+	{
             (*old_free_proc)(old_result);
         }
     }
@@ -165,6 +190,7 @@ void arg_dstr_set(arg_dstr_t ds, char* str, arg_dstr_freefn* free_proc) {
         ds->append_data = NULL;
         ds->append_data_size = 0;
     }
+#endif
 }
 
 char* arg_dstr_cstr(arg_dstr_t ds) /* Interpreter whose result to return. */
@@ -173,12 +199,16 @@ char* arg_dstr_cstr(arg_dstr_t ds) /* Interpreter whose result to return. */
 }
 
 void arg_dstr_cat(arg_dstr_t ds, const char* str) {
+#ifndef ARG_STATIC_ALLOCATION
     setup_append_buf(ds, (int)strlen(str) + 1);
+#endif
     memcpy(ds->data + strlen(ds->data), str, strlen(str));
 }
 
 void arg_dstr_catc(arg_dstr_t ds, char c) {
+#ifndef ARG_STATIC_ALLOCATION
     setup_append_buf(ds, 2);
+#endif
     memcpy(ds->data + strlen(ds->data), &c, 1);
 }
 
@@ -217,7 +247,11 @@ void arg_dstr_catc(arg_dstr_t ds, char c) {
  */
 void arg_dstr_catf(arg_dstr_t ds, const char* fmt, ...) {
     va_list arglist;
+#ifndef ARG_STATIC_ALLOCATION
     char* buff;
+#else
+    char buff[CATF_STATIC_BUFFER_SIZE] = {0};
+#endif
     int n, r;
     size_t slen;
 
@@ -228,11 +262,16 @@ void arg_dstr_catf(arg_dstr_t ds, const char* fmt, ...) {
        performed using the truncating "vsnprintf" call (to avoid buffer
        overflows) on increasing potential sizes for the output result. */
 
+#ifndef ARG_STATIC_ALLOCATION
     if ((n = (int)(2 * strlen(fmt))) < START_VSNBUFF)
         n = START_VSNBUFF;
 
     buff = (char*)xmalloc(n + 2);
     memset(buff, 0, n + 2);
+#else
+    if ((n = (int)(2 * strlen(fmt))) > (CATF_STATIC_BUFFER_SIZE / 2))
+	    return;
+#endif
 
     for (;;) {
         va_start(arglist, fmt);
@@ -248,15 +287,22 @@ void arg_dstr_catf(arg_dstr_t ds, const char* fmt, ...) {
         else
             n += n;
 
+#ifndef ARG_STATIC_ALLOCATION
         xfree(buff);
         buff = (char*)xmalloc(n + 2);
         memset(buff, 0, n + 2);
+#else
+        memset(buff, 0, CATF_STATIC_BUFFER_SIZE);
+#endif
     }
 
     arg_dstr_cat(ds, buff);
+#ifndef ARG_STATIC_ALLOCATION
     xfree(buff);
+#endif
 }
 
+#ifndef ARG_STATIC_ALLOCATION
 static void setup_append_buf(arg_dstr_t ds, int new_space) {
     int total_space;
 
@@ -310,25 +356,33 @@ static void setup_append_buf(arg_dstr_t ds, int new_space) {
     arg_dstr_free(ds);
     ds->data = ds->append_data;
 }
+#endif
 
 void arg_dstr_free(arg_dstr_t ds) {
     if (ds->free_proc != NULL) {
+#ifndef ARG_STATIC_ALLOCATION
         if (ds->free_proc == ARG_DSTR_DYNAMIC) {
             xfree(ds->data);
         } else {
             (*ds->free_proc)(ds->data);
         }
+#endif
         ds->free_proc = NULL;
     }
+#ifdef ARG_STATIC_ALLOCATION
+    memset(ds->sbuf, 0, ARG_DSTR_SIZE + 1);
+#endif
 }
 
 void arg_dstr_reset(arg_dstr_t ds) {
     arg_dstr_free(ds);
+#ifndef ARG_STATIC_ALLOCATION
     if ((ds->append_data != NULL) && (ds->append_data_size > 0)) {
         xfree(ds->append_data);
         ds->append_data = NULL;
         ds->append_data_size = 0;
     }
+#endif
 
     ds->data = ds->sbuf;
     ds->sbuf[0] = 0;
